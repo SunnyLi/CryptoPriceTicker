@@ -51,7 +51,9 @@
                 ], {
                     lines: { show: true, fill: true },
                     points: { show: true },
-                    xaxis: { mode: "time", timeformat: "%H:%M", minTickSize: [1/2, "hour"], timezone: "browser" },
+                    xaxis: { mode: "time", timeformat: "%H:%M", minTickSize: [1/2, "hour"], timezone: "browser",
+                                            min: app.coordinate[app.coordinate.length - 1][0] - 5000000 },
+                    yaxis: { min: 0.0005 },
                     zoom: { interactive: true },
                     pan: { interactive: true }
                 });
@@ -97,7 +99,8 @@
                     date = new Date(trade.time * 1000 - time_adj);
                     $('#table-header').after(
                         '<tr><td>'+ parseFloat(trade.nyan).toFixed(2) +' NYAN</td>' +
-                        '<td><abbr title="' + date.toString() +'">' + date.getHours() + ':' + date.getMinutes() + '</abbr></td>' +
+                        '<td><abbr title="' + date.toString() + '">' + date.getHours() +
+                                        ':' + date.getMinutes() + '</abbr></td>' +
                         '<td>' + trade.rate + '</td></tr>'
                     );
                     
