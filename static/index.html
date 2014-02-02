@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>NYAN Exchange Chart</title>
+	<link href="./cryptocoinchart.css" rel="stylesheet" type="text/css">
+	<link href="./twinkle.css" rel="stylesheet" type="text/css">
+	<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="./flot/excanvas.min.js"></script><![endif]-->
+	<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
+	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.fillbetween.min.js"></script>
+	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.min.js"></script>
+	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.resize.min.js"></script>
+	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.min.js"></script>
+    <script src="http://205.185.115.118:8080/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+    
+        $(function() {
+            
+            var app = [];
+            var plot;
+            var socket = io.connect('http://205.185.115.118:8080');
+            var time_adj = 10800000;
+            
+            socket.on('welcome', function(data){
+                
+                // initialize charts and table
+                
+                app.data = data;
+                app.coordinate = [];
+                app.chart = [$('#price-overtime')];
+                
+                // wrong order!
+                app.data.sort(function (a, b) {
+                    if (a.time > b.time)
+                    return 1;
+                    if (a.time < b.time)
+                    return -1;
+                    // a must be equal to b
+                    return 0;
+                });
+                
+                app.data.forEach(function(trade) {
+                    app.coordinate.push([trade.time * 1000 - time_adj, trade.rate]);
+                });
+                
+                plot = $.plot(app.chart[0], [
+                    { data: app.coordinate, id: 'actual', lines: {fill: false} } ,
+                    //{ data: getRandomData(), fillBetween: 'actual', color: "#0f0" },
+                    //{ data: x, fillBetween: 'actual', color: "#f00" },
+                ], {
+                    lines: { show: true, fill: true },
+                    points: { show: true },
+                    xaxis: { mode: "time", timeformat: "%H:%M", minTickSize: [1/2, "hour"], timezone: "browser" },
+                    zoom: { interactive: true },
+                    pan: { interactive: true }
+                });
+                
+                app.chart[0].bind("plotpan", function (event, plot) {
+                    var axes = plot.getAxes();
+                    $(".message").html("Panning to x: "  + axes.xaxis.min.toFixed(2)
+                        + " &ndash; " + axes.xaxis.max.toFixed(2)
+                        + " and y: " + axes.yaxis.min.toFixed(2)
+                        + " &ndash; " + axes.yaxis.max.toFixed(2));
+                });
+                
+                app.chart[0].bind("plotzoom", function (event, plot) {
+                    var axes = plot.getAxes();
+                    $(".message").html("Zooming to x: "  + axes.xaxis.min.toFixed(2)
+                        + " &ndash; " + axes.xaxis.max.toFixed(2)
+                        + " and y: " + axes.yaxis.min.toFixed(2)
+                        + " &ndash; " + axes.yaxis.max.toFixed(2));
+                });
+                
+                // update ticker
+                $('#value').text(app.data[app.data.length-1].rate);
+                
+                for (var i = app.data.length - 18; i < app.data.length; i++){
+                    date = new Date(app.data[i].time * 1000 - time_adj);
+                    $('#table-header').after(
+                        '<tr><td>'+ parseFloat(app.data[i].nyan).toFixed(2) + ' NYAN</td>' +
+                        '<td><abbr title="' + date.toString() + '">' + date.getHours() +
+                                        ':' + date.getMinutes() + '</abbr></td>' +
+                        '<td>' + app.data[i].rate + '</td></tr>'
+                    );
+                }
+                
+                // console.log(data)
+            });
+            
+            socket.on('update', function (new_data) {
+                new_data = new_data.reverse();
+                app.data = app.data.concat(new_data);
+                new_data.forEach(function(trade) {
+                    app.coordinate.push([trade.time * 1000 - time_adj, trade.rate]);
+                    
+                    date = new Date(trade.time * 1000 - time_adj);
+                    $('#table-header').after(
+                        '<tr><td>'+ parseFloat(trade.nyan).toFixed(2) +' NYAN</td>' +
+                        '<td><abbr title="' + date.toString() +'">' + date.getHours() + ':' + date.getMinutes() + '</abbr></td>' +
+                        '<td>' + trade.rate + '</td></tr>'
+                    );
+                    
+                });
+                
+                plot.setData([
+                    { data: app.coordinate, id: 'actual', lines: {fill: false} } ,
+                    //{ data: getRandomData(), fillBetween: 'actual', color: "#0f0" },
+                    //{ data: x, fillBetween: 'actual', color: "#f00" },
+                ]);
+                
+                // Since the axes don't change, we don't need to call plot.setupGrid()
+                
+                plot.draw();
+                
+                // update ticker
+                $('#value').text(app.data[app.data.length-1].rate);
+                
+                // console.log(data);
+            });
+            
+        });
+
+	</script>
+</head>
+<body>
+
+    <div id="header">
+        <div id="header-wrap">
+            <span id="title-box">
+                <div id="title">NYAN TRADES CHART</div>
+                <div id="punchline">Nyancoin exchange rates to the moon!</div>
+            </span>
+            <span id="selections">
+                <div id="currency">
+                    <span id="btc">BTC</span>
+                    <span id="ltc">LTC</span>
+                    <span id="doge">DOGE</span>
+                    <span id="usd">USD</span>
+                </div>
+                <div id="exchange">
+                    Freshmarket
+                </div>
+            </span>
+        </div>
+    </div><br>
+
+	<div id="content">
+        
+        <div id="price-list">
+            <div id="ticker">
+                <div id="current"><span id="value">9001</span> LTC / NYAN</div><br>
+                <!--<div id="bid">much <span style="color: #0f0">bid</span>:
+                    <span id="current-bid">233</span>
+                </div>
+                <div id="ask">very <span style="color: #f00">ask</span>:
+                    <span id="current-ask">238</span>
+                </div>-->
+            </div>
+            <div id="table-div">
+                <table id="trades">
+                    <tbody>
+                        <tr id="table-header">
+                            <th>Traded</th>
+                            <th>Since</th>
+                            <th>Rate</th>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <br><br>
+        </div>
+
+        <h3 style="color: #999;">NYAN / LTC Pair</h3>
+        
+		<div class="graph-container">
+			<div id="price-overtime" class="chart"></div>
+		</div>
+
+		<p>Nyan~</p>
+
+	</div>
+
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+    
+	<div id="footer">
+        Donate NYAN: KJH3Hqzi8dQ89tHUjNvWumMhW1ZdYv9EQz<br>
+        Donate DOGE: DNMX219Ya8Px9ALWrHb5Mfdqky6kVaCbR6<br>
+        &copy; 2014 Sunnyok<br>
+	</div>
+
+</body>
+</html>
