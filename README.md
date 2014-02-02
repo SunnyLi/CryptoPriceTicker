@@ -1,4 +1,4 @@
-CoinChart
+CryptoCoinChart
 ==========
 
 Chart for displaying historical cryptocoin prices.
