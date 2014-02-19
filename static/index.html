@@ -3,23 +3,24 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>NYAN Exchange Chart</title>
-	<link href="./cryptocoinchart.css" rel="stylesheet" type="text/css">
-	<link href="./twinkle.css" rel="stylesheet" type="text/css">
+	<link href="./nyan-charts.css" rel="stylesheet" type="text/css">
+	<link href="./nyan.css" rel="stylesheet" type="text/css">
 	<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="./flot/excanvas.min.js"></script><![endif]-->
 	<script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
 	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.downsample.js"></script>
 	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.fillbetween.min.js"></script>
 	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.min.js"></script>
 	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.resize.min.js"></script>
 	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.min.js"></script>
-    <script src="http://205.185.115.118:8080/socket.io/socket.io.js"></script>
+    <script src="http://socket.ny.anime.re:8080/socket.io/socket.io.js"></script>
 	<script type="text/javascript">
     
         $(function() {
             
             var app = [];
             var plot;
-            var socket = io.connect('http://205.185.115.118:8080');
+            var socket = io.connect('http://socket.ny.anime.re:8080');
             var time_adj = 10800000;
             
             socket.on('welcome', function(data){
@@ -51,27 +52,29 @@
                 ], {
                     lines: { show: true, fill: true },
                     points: { show: true },
-                    xaxis: { mode: "time", timeformat: "%H:%M", minTickSize: [1/2, "hour"], timezone: "browser",
-                                            min: app.coordinate[app.coordinate.length - 1][0] - 5000000 },
-                    yaxis: { min: 0.0005 },
-                    zoom: { interactive: true },
+                    series: { downsample: { threshold: 50 } },
+                    xaxis: { mode: "time", timeformat: "%m/%d %H:%M", ticks: 5, minTickSize: [1/2, "hour"], timezone: "browser",
+                                min: app.coordinate[app.coordinate.length - 1][0] - 8000000,
+                                panRange: [app.coordinate[0][0] - 2000000, new Date().getTime() + 5000000] },
+                    yaxis: { min: 0.0005, max: 0.001, panRange: [-0.0002, 0.002], zoomRange: 0.001 },
+                    zoom: { interactive: true, center: {right: 0} },
                     pan: { interactive: true }
                 });
                 
                 app.chart[0].bind("plotpan", function (event, plot) {
                     var axes = plot.getAxes();
-                    $(".message").html("Panning to x: "  + axes.xaxis.min.toFixed(2)
-                        + " &ndash; " + axes.xaxis.max.toFixed(2)
-                        + " and y: " + axes.yaxis.min.toFixed(2)
-                        + " &ndash; " + axes.yaxis.max.toFixed(2));
+                    $(".message").html("Panning to x: "  + axes.xaxis.min.toFixed(0)
+                        + " &ndash; " + axes.xaxis.max.toFixed(0)
+                        + " and y: " + axes.yaxis.min.toFixed(8)
+                        + " &ndash; " + axes.yaxis.max.toFixed(8));
                 });
                 
                 app.chart[0].bind("plotzoom", function (event, plot) {
                     var axes = plot.getAxes();
-                    $(".message").html("Zooming to x: "  + axes.xaxis.min.toFixed(2)
-                        + " &ndash; " + axes.xaxis.max.toFixed(2)
-                        + " and y: " + axes.yaxis.min.toFixed(2)
-                        + " &ndash; " + axes.yaxis.max.toFixed(2));
+                    $(".message").html("Zooming to x: "  + axes.xaxis.min.toFixed(0)
+                        + " &ndash; " + axes.xaxis.max.toFixed(0)
+                        + " and y: " + axes.yaxis.min.toFixed(8)
+                        + " &ndash; " + axes.yaxis.max.toFixed(8));
                 });
                 
                 // update ticker
@@ -80,7 +83,7 @@
                 for (var i = app.data.length - 18; i < app.data.length; i++){
                     date = new Date(app.data[i].time * 1000 - time_adj);
                     $('#table-header').after(
-                        '<tr><td>'+ parseFloat(app.data[i].nyan).toFixed(2) + ' NYAN</td>' +
+                        '<tr><td>'+ parseFloat(app.data[i].nyan).toFixed(4) + ' NYAN</td>' +
                         '<td><abbr title="' + date.toString() + '">' + date.getHours() +
                                         ':' + date.getMinutes() + '</abbr></td>' +
                         '<td>' + app.data[i].rate + '</td></tr>'
@@ -98,7 +101,7 @@
                     
                     date = new Date(trade.time * 1000 - time_adj);
                     $('#table-header').after(
-                        '<tr><td>'+ parseFloat(trade.nyan).toFixed(2) +' NYAN</td>' +
+                        '<tr><td>'+ parseFloat(trade.nyan).toFixed(4) +' NYAN</td>' +
                         '<td><abbr title="' + date.toString() + '">' + date.getHours() +
                                         ':' + date.getMinutes() + '</abbr></td>' +
                         '<td>' + trade.rate + '</td></tr>'
@@ -180,7 +183,7 @@
 			<div id="price-overtime" class="chart"></div>
 		</div>
 
-		<p>Nyan~</p>
+		<p class="message" style="color: #333">You can zoom or drag on the chart to see more data Nyan~</p>
 
 	</div>
 

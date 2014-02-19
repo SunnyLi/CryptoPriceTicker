@@ -23,24 +23,24 @@ This stylesheet and the associated (x)html may be modified in any way to fit you
     to {background-position:-10000px 5000px;}
 }
 
-@keyframes move-clouds-back {
-    from {background-position:0 0;}
+@keyframes move-nyan-back {
+    from {background-position: 0 100%;}
     to {background-position:10000px 0;}
 }
-@-webkit-keyframes move-clouds-back {
-    from {background-position:0 0;}
+@-webkit-keyframes move-nyan-back {
+    from {background-position: 0 100%;}
     to {background-position:10000px 0;}
 }
-@-moz-keyframes move-clouds-back {
-    from {background-position:0 0;}
+@-moz-keyframes move-nyan-back {
+    from {background-position: 0 100%;}
     to {background-position:10000px 0;}
 }
-@-ms-keyframes move-clouds-back {
-    from {background-position: 0;}
+@-ms-keyframes move-nyan-back {
+    from {background-position: 0 100%;}
     to {background-position:10000px 0;}
 }
 
-.stars, .twinkling, .clouds {
+.stars, .twinkling, .nyan {
   position:fixed;
   top:0;
   left:0;
@@ -67,13 +67,21 @@ This stylesheet and the associated (x)html may be modified in any way to fit you
   animation:move-twink-back 200s linear infinite;
 }
 
-.clouds{
-    background:transparent url(images/clouds.png) repeat top center;
+.nyan{
+    background:transparent url(images/nyan.gif) center bottom repeat-x;
+    background-size: 12%;
+    left: -2%;
+    width: 110%;
     z-index:-1;
+    
+    transform:rotate(-5deg);
+    -ms-transform:rotate(-5deg);
+    -moz-transform:rotate(-5deg);
+    -webkit-transform:rotate(-5deg);
 
-  -moz-animation:move-clouds-back 200s linear infinite;
-  -ms-animation:move-clouds-back 200s linear infinite;
-  -o-animation:move-clouds-back 200s linear infinite;
-  -webkit-animation:move-clouds-back 200s linear infinite;
-  animation:move-clouds-back 200s linear infinite;
+  -moz-animation:move-nyan-back 80s linear infinite;
+  -ms-animation:move-nyan-back 80s linear infinite;
+  -o-animation:move-nyan-back 80s linear infinite;
+  -webkit-animation:move-nyan-back 80s linear infinite;
+  animation:move-nyan-back 80s linear infinite;
 }

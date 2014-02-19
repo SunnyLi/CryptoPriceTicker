@@ -6,7 +6,7 @@ var db, collection;
 var prev;
 MongoClient.connect('mongodb://127.0.0.1:27017/nyan', function (err, mongo) {
     db = mongo;
-    collection = db.collection("freshmarket");
+    collection = db.collection("freshmarket-ltc-daily");
     if (err) {
         throw err;
     } else {
@@ -21,7 +21,7 @@ MongoClient.connect('mongodb://127.0.0.1:27017/nyan', function (err, mongo) {
 
 var list = [];
 function latest() {
-    collection.find({}).sort({time: -1}).limit(20).toArray(
+    collection.find({}).sort({time: -1}).limit(1000).toArray(
         function(err, results) {
             list =  results;
             console.log('last: ');
@@ -47,7 +47,7 @@ io.sockets.on('connection', function(socket){
 // update
 setInterval(function(){
     
-    collection.find({ time: {$gt: prev.time} }).sort({time: -1}).limit(10).toArray(
+    collection.find({ time: {$gt: prev.time} }).sort({time: -1}).limit(20).toArray(
         function(err, results) {
             console.log(results);
             if (results.length > 0){
