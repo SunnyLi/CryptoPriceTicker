@@ -1,6 +1,6 @@
-CryptoCoinChart
+Nyan Chart
 ==========
 
-Chart for displaying historical cryptocoin prices.
+Chart for cryptocurrency prices across different exchanges.
 
-Currently only NYAN is supported.
+Currently only for NYAN, but support for other coins can be easily added.

@@ -1,61 +1,115 @@
 var node = require('http').createServer(server),
-io = require('socket.io').listen(node),
-MongoClient = require('mongodb').MongoClient;
-
-var db, collection;
-var prev;
-MongoClient.connect('mongodb://127.0.0.1:27017/nyan', function (err, mongo) {
-    db = mongo;
-    collection = db.collection("freshmarket-ltc-daily");
-    if (err) {
-        throw err;
-    } else {
-        console.log("successfully connected to the database");
-        latest();
-        setTimeout(function(){
-            prev = list[0];
-            console.log(prev);
-        }, 2000);
-    }
-});
-
-var list = [];
-function latest() {
-    collection.find({}).sort({time: -1}).limit(1000).toArray(
-        function(err, results) {
-            list =  results;
-            console.log('last: ');
-            console.log(list);
-        }
-    );
-}
-
-node.listen(8080);
-
+    io = require('socket.io').listen(node),
+    MongoClient = require('mongodb').MongoClient;
+    node.listen(8080);
 
 function server (request, response){
     response.writeHead(200);
-    //response.end('let\'s just end\n with <b>this</b>.');
+    response.end('<html>\
+                    <head><title>Give me Nyan!</title></head>\
+                    <body>NYAN~ KJH3Hqzi8dQ89tHUjNvWumMhW1ZdYv9EQz</body>\
+                  </html>');
 }
 
+// database collections
+var collections = {
+    "coinedup": {
+        "btc": {}
+    },
+    "freshmarket": {
+        "ltc": {}
+    }
+};
+
+// non reference duplicate
+var prev = JSON.parse(JSON.stringify(collections));
+var list = JSON.parse(JSON.stringify(collections));
+
+MongoClient.connect('mongodb://127.0.0.1:27017/nyan', function (err, mongo) {
+    if (err) {
+        throw err;
+    } else {
+        load_collections(mongo);
+    }
+});
+
+function load_collections(db) {
+    collections['coinedup']['btc']['latest'] = db.collection("coinedup-btc-latest");
+    collections['freshmarket']['ltc']['latest'] = db.collection("freshmarket-ltc-daily");
+
+    console.log("successfully connected to the database");
+
+    // set all list
+    traverse3(collections, updateList);
+    // set all prev
+    setTimeout(function() {
+        traverse3(list, updatePrevious)
+    }, 1000);
+}
+
+function traverse3(object, callback) {
+    for (var exchange in object) {
+        var second = object[exchange];
+        for (var market in second)
+            if(second.hasOwnProperty(market)){
+                var third = second[market];
+                for (var interval in third)
+                    if(third.hasOwnProperty(interval))
+                        callback(exchange, market, interval);
+            }
+    }
+}
+
+function updateList(exchange, market, interval) {
+    collections[exchange][market][interval].find({}).sort({time: -1}).limit(100).toArray(
+        function(err, results) {
+            list[exchange][market][interval] =  results;
+        }
+    )
+}
+
+function updatePrevious(exchange, market, interval) {
+    prev[exchange][market][interval] = list[exchange][market][interval][0];
+}
+
+
+
+// new view
 io.sockets.on('connection', function(socket){
-    latest();
-    setTimeout(function(){socket.emit('welcome', list)}, 2000);
+    socket.on('switch-view', function(data){
+        if (socket.room) socket.leave(socket.room);
+//        console.log(socket.room);
+        socket.room = data.exchange + '-' + data.market + '-latest';
+
+        // check if it matches a collection
+        var valid = false;
+        traverse3(collections, function(exchange, market, interval) {
+            if (data.exchange == exchange && data.market == market){
+                valid = true;
+                return;
+            }
+        })
+
+        if (valid){
+            updateList(data.exchange, data.market, 'latest');
+            setTimeout(function(){socket.emit('render', list[data.exchange][data.market]['latest'])}, 1000);
+            // get updates
+            socket.join(socket.room);
+        }
+    })
 })
 
-
-// update
+// update view
 setInterval(function(){
-    
-    collection.find({ time: {$gt: prev.time} }).sort({time: -1}).limit(20).toArray(
-        function(err, results) {
-            console.log(results);
-            if (results.length > 0){
-                io.sockets.emit('update', results);
-                console.log("update pushed!");
-                prev = results[0];
+    traverse3(collections, function(exchange, market, interval) {
+        collections[exchange][market][interval].find({ time: {$gt: prev[exchange][market][interval].time} })
+                                                .sort({time: -1}).limit(5).toArray(
+            function(err, results) {
+                if (results.length > 0){
+                    io.sockets.in(exchange + '-' + market + '-latest').emit('update', results);
+                    prev[exchange][market][interval] = results[0];
+                }
             }
-        }
-    );
-    
-}, 30000);
+        )
+    })
+}, 120000);

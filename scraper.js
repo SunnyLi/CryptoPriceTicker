@@ -1,91 +1,113 @@
 var request = require('request'),
     cheerio = require('cheerio'),
     MongoClient = require('mongodb').MongoClient,
-    format = require('util').format;
+    format = require('util').format,
+    io = require('socket.io/node_modules/socket.io-client');
 
-var db;
+// database collections
+var collections = {
+    "coinedup": {
+        "btc": {}
+    },
+    "freshmarket": {
+        "ltc": {}
+    }
+};
+
+// non reference duplicate
+var prev = JSON.parse(JSON.stringify(collections));
+
 MongoClient.connect('mongodb://127.0.0.1:27017/nyan', function (err, mongo) {
-    db = mongo;
     if (err) {
         throw err;
     } else {
-        console.log("successfully connected to the database");
-        findPrev();
+        load_collections(mongo);
     }
 });
 
-var prev;
-function findPrev(){
-    var collection = db.collection("freshmarket");
-    collection.find({}).sort({time: -1}).limit(1).toArray(
-        function(err, results) {
-            prev =  results[0];
-            console.log('last: ');
-            console.log(prev);
-        });
-}
-// collection.find({}).sort({time: -1}).limit(1).toArray(function(err, result){console.log(result)})
+function load_collections(db) {
+    collections['coinedup']['btc']['latest'] = db.collection("coinedup-btc-latest");
+    collections['freshmarket']['ltc']['latest'] = db.collection("freshmarket-ltc-daily");
 
-// assert valid data
+    console.log("successfully connected to the database");
+
+    // set all prev
+    traverse3(collections, findPrevious);
+}
+
+function traverse3(object, callback) {
+    for (var exchange in object) {
+        var second = object[exchange];
+        for (var market in second)
+            if(second.hasOwnProperty(market)){
+                var third = second[market];
+                for (var interval in third)
+                    if(third.hasOwnProperty(interval))
+                        callback(exchange, market, interval);
+            }
+    }
+}
+
+function findPrevious(exchange, market, interval) {
+    collections[exchange][market][interval].find({}).sort({time: -1}).limit(1).toArray(
+        function(err, results) {
+            prev[exchange][market][interval] =  results[0];
+        }
+    )
+}
+
+function insert(exchange, market, interval, data) {
+    collections[exchange][market][interval].insert(data,
+        function(err, docs) {
+            console.log('inserted:');
+            console.log(err);
+            console.log(docs);
+        });
+    
+    setTimeout(function(){ findPrevious(exchange, market, interval) }, 10000);
+}
+
+
+// ============================== Scrape ==============================
+
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 function isNumber(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-// first NYAN / LTC exchange w/ bad SSL
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+//setInterval(function() {
+//    // query all static sources
+//}, 120000)
 
-setInterval(function(){
-    request('https://freshmarket.co.in/index.php?page=trade&market=107', function (error, response, html) {
-      if (!error && response.statusCode == 200) {
-        
-        var res = [];
-        var $ = cheerio.load(html);
-        $('center div.box table#page thead tr').each(function(i, element){
-        
-          var cur = $(this);
-          var rate = cur.find(">:first-child").text();
-          var nyan = cur.find(">:nth-child(2)").text();
-          var ltc = cur.find(">:nth-child(3)").text();
-          var time = Math.round(new Date(cur.find(">:nth-child(4)").text().replace(/-/g, " ").replace("/", " ")).getTime() / 1000);
+var coinedup = io.connect('https://socket.coinedup.com:3000');
+coinedup.on('msg_updateOrderBook', function(data){
+//    console.log(data);
+    if (data.market == 'NYAN' && data.base == 'BTC')
+        coinedup_update(data.base);
+});
 
-          var meta = {
-            rate: rate,
-            nyan: nyan,
-            ltc: ltc,
-            time: time
-          }
-          
-          // insert till
-          if (rate == prev.rate & nyan == prev.nyan & ltc == prev.ltc || time <= prev.time)
-          { 
-            console.log('result:');
-            console.log(res);
-            if (res.length > 0)
-                add_new_data(res);
-            return false;   // need to be false!
-          }
-          
-          if (isNumber(meta.rate)){
-            console.log('push:');
-            console.log(meta);
-            res.push(meta);
-          }
-        });
-      }else{
-        console.log('parse error:');
-        console.log(error);
-      }
-    })}, 120000 // 2 min poll
-);
+function coinedup_update(base){
+    request('https://coinedup.com/OrderBook?market=NYAN&base='+base, function (error, response, html) {
+        if (!error && response.statusCode == 200) {
 
-function add_new_data(data){
-    var collection = db.collection("freshmarket");
-    
-    collection.insert(data, 
-        function(err, docs) {
-            console.log('insert error:');
-            console.log(err);
-        });
-    
-    setTimeout(function(){findPrev()}, 10000);
+            var $ = cheerio.load(html);
+
+            var meta = {
+                time: Math.round(new Date().getTime() / 1000),
+                rate: $("div#elementDisplayLastPrice").find(">:first-child").text().match(/\d+\.\d+/)[0],
+                high: $("div#elementDisplayBidAsk").find(">:nth-child(2)").text().match(/\d+\.\d+/)[0],
+                low: $("div#elementDisplayBidAsk").find(">:first-child").text().match(/\d+\.\d+/)[0],
+//                nyan: 0.001
+            }
+
+            if (isNumber(meta.rate) && isNumber(meta.high) && isNumber(meta.low)) {
+                insert("coinedup", base.toLowerCase(), "latest", meta);
+            }
+
+        } else {
+            console.log('error:');
+            console.log(error);
+        }
+    })
 }

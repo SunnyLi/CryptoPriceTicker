@@ -1,0 +1,40 @@
+<div id="content">
+    <div id="price-list">
+        <div id="ticker">
+            <div id="current"><span id="value">9001</span> {{market | uppercase}} / NYAN</div><br>
+            <!--<div id="bid">much <span style="color: #0f0">bid</span>:
+                <span id="current-bid">233</span>
+            </div>
+            <div id="ask">very <span style="color: #f00">ask</span>:
+                <span id="current-ask">238</span>
+            </div>-->
+        </div>
+        <div id="table-div">
+            <table id="trades">
+                <tbody>
+                    <tr id="table-header">
+<!--                        <th>Traded</th>-->
+                        <th>Time</th>
+                        <th>Rate</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <br><br>
+    </div>
+
+    <h3 style="color: #999;">{{market | uppercase}} / NYAN on {{exchange}}</h3>
+
+    <div class="graph-container">
+        <div id="price-overtime" class="chart"></div>
+    </div>
+
+    <p class="message" style="color: #333">You can zoom or drag on the chart to see more data Nyan~</p>
+</div>
+
+
+<!--
+    <div class="graph-container">
+        <chart ng-model='data'></chart>
+    </div>
+-->
