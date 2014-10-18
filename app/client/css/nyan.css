@@ -52,12 +52,12 @@ This stylesheet and the associated (x)html may be modified in any way to fit you
 }
 
 .stars {
-  background:#000 url(images/stars.png) repeat top center;
+  background:#000 url(../assets/images/stars.png) repeat top center;
   z-index:-3;
 }
 
 .twinkling{
-  background:transparent url(images/twinkling.png) repeat top center;
+  background:transparent url(../assets/images/twinkling.png) repeat top center;
   z-index:-2;
 
   -moz-animation:move-twink-back 200s linear infinite;
@@ -68,7 +68,7 @@ This stylesheet and the associated (x)html may be modified in any way to fit you
 }
 
 .nyan{
-    background:transparent url(images/nyan.gif) center bottom repeat-x;
+    background:transparent url(../assets/images/nyan.gif) center bottom repeat-x;
     background-size: 12%;
     left: -2%;
     width: 110%;
