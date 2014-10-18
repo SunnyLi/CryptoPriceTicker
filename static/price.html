@@ -1,7 +1,7 @@
 <div id="content">
     <div id="price-list">
         <div id="ticker">
-            <div id="current"><span id="value">9001</span> {{market | uppercase}} / NYAN</div><br>
+            <div id="current"><span id="value">9001</span> <span ng-if="market == 'btc'">m</span>{{market | uppercase}} / NYAN</div><br>
             <!--<div id="bid">much <span style="color: #0f0">bid</span>:
                 <span id="current-bid">233</span>
             </div>
@@ -23,7 +23,7 @@
         <br><br>
     </div>
 
-    <h3 style="color: #999;">{{market | uppercase}} / NYAN on {{exchange}}</h3>
+    <h3 style="color: #999;"><span ng-if="market == 'btc'">m</span>{{market | uppercase}} / NYAN on {{exchange}}</h3>
 
     <div class="graph-container">
         <div id="price-overtime" class="chart"></div>

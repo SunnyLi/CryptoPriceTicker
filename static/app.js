@@ -51,7 +51,7 @@ angular.module('nyan-chart', ['ngRoute'])
 .controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'socket', function($scope, $routeParams, $rootScope, socket) {
 
     $rootScope.markets = {
-        'btc': ['coinedup', 'cryptsy'],
+        'btc': ['coinedup', 'cryptsy (unimplemented)'],
         'ltc': ['freshmarket']
     };
 
@@ -101,7 +101,7 @@ angular.module('nyan-chart', ['ngRoute'])
         $scope.app.ymax = 0.001;    // LTC
 
         if ($scope.market == 'btc')
-            $scope.app.ymax = 0.00002;
+            $scope.app.ymax = 0.002;
 
 
         // wrong order!
@@ -137,9 +137,9 @@ angular.module('nyan-chart', ['ngRoute'])
         ], {
             lines: { show: true, fill: true },
             points: { show: true },
-            series: { downsample: { threshold: 50 } },
+            series: { downsample: { threshold: 200 } },
             xaxis: { mode: "time", timeformat: "%m/%d %H:%M", ticks: 5, minTickSize: [1/2, "hour"], timezone: "browser",
-                        min: $scope.app.coordinate.real[$scope.app.coordinate.real.length - 1][0] - 8000000,
+                        min: $scope.app.coordinate.real[$scope.app.coordinate.real.length - 1][0] - 10000000,
                         panRange: [$scope.app.coordinate.real[0][0] - 2000000, new Date().getTime() + 5000000] },
             yaxis: { min: $scope.app.ymax / 2, max: $scope.app.ymax, panRange: [-0.0002, $scope.app.ymax / 2 * 3],
                         zoomRange: $scope.app.ymax },
@@ -256,5 +256,5 @@ $(document).ready(function(){
             $('.exchange#'+rootscope.market).css('display', 'block');
             $('#'+rootscope.market+' #'+rootscope.exchange).css("color", "white");   
         }
-    }, 100);
+    }, 1000);
 });
