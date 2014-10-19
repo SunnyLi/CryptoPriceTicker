@@ -1,29 +1,31 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html ng-app="nyan-chart">
+<html ng-app="crypto-chart">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<title>NYAN Chart | To the Mooooon!</title>
-	<link href="./nyan.css" rel="stylesheet" type="text/css">
-    <link href="./nyan-charts.css" rel="stylesheet" type="text/css">
-    <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="./flot/excanvas.min.js"></script><![endif]-->
-    <script language="javascript" type="text/javascript" src="./flot/jquery.js"></script>
-	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.js"></script>
+	<title>Crypto Price Ticker &amp; Chart</title>
+	<link href="app/client/css/background.css" rel="stylesheet" type="text/css">
+    <link href="app/client/css/chart.css" rel="stylesheet" type="text/css">
+    <!--[if lte IE 8]>
+    <script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/excanvas.min.js"></script>
+    <![endif]-->
+    <script language="javascript" type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js"></script>
 	<!--<script language="javascript" type="text/javascript" src="./flot/jquery.flot.downsample.js"></script>-->
-	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.fillbetween.min.js"></script>
-	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.navigate.min.js"></script>
-	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.resize.min.js"></script>
-	<script language="javascript" type="text/javascript" src="./flot/jquery.flot.time.min.js"></script>
-    <script language="javascript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.13/angular.min.js"></script>
-    <script language="javascript" type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.13/angular-route.min.js"></script>
-    <script language="javascript" type="text/javascript" src="http://socket.ny.anime.re:8080/socket.io/socket.io.js"></script>
-    <script language="javascript" type="text/javascript" src="./app.js"></script>
+	<script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.fillbetween.min.js"></script>
+	<script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.navigate.min.js"></script>
+	<script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.resize.min.js"></script>
+	<script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.time.min.js"></script>
+    <script language="javascript" type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+    <script language="javascript" type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular-route.min.js"></script>
+    <script language="javascript" type="text/javascript" src="//cdn.socket.io/socket.io-1.1.0.js"></script>
+    <script language="javascript" type="text/javascript" src="app/client/js/app.js"></script>
 </head>
 <body>
     <div id="header">
         <div id="header-wrap">
             <span id="title-box">
-                <div id="title">NYAN CHART</div>
-                <div id="punchline">To the Mooooon and beyond!</div>
+                <div id="title">Crypto Price Chart</div>
+                <div id="punchline">and price ticker!</div>
             </span>
             <span id="selections">
                 <div id="currency">
@@ -42,7 +44,6 @@
     <div class="twinkling"></div>
 
 	<div id="footer">
-        Donate NYAN: KJH3Hqzi8dQ89tHUjNvWumMhW1ZdYv9EQz<br>
         Donate DOGE: DNMX219Ya8Px9ALWrHb5Mfdqky6kVaCbR6<br>
         &copy; 2014 Sunnyok<br>
 	</div>

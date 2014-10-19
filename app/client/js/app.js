@@ -1,6 +1,6 @@
-angular.module('nyan-chart', ['ngRoute'])
+angular.module('crypto-chart', ['ngRoute'])
 
-.value('socketUrl', 'http://socket.ny.anime.re:8080')
+.value('socketUrl', 'http://api.marketmonitor.io:80/BTC/USD/trades')
 
 .factory('socket', ['$rootScope', 'socketUrl', function ($rootScope, socketUrl) {
   var socket = io.connect(socketUrl);
@@ -33,15 +33,11 @@ angular.module('nyan-chart', ['ngRoute'])
     $routeProvider
         .when('/', {
             controller: 'Ticker',
-            templateUrl: 'price.html'
+            templateUrl: 'app/client/views/price.html'
         })
         .when('/:market/:exchange/', {
             controller: 'Ticker',
-            templateUrl: 'price.html'
-        })
-        .when('/diff/', {   // unimplemented
-            controller: 'Difficulty',
-            templateUrl: 'diff.html'
+            templateUrl: 'app/client/views/price.html'
         })
         .otherwise({
             redirectTo:'/'
@@ -51,12 +47,11 @@ angular.module('nyan-chart', ['ngRoute'])
 .controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'socket', function($scope, $routeParams, $rootScope, socket) {
 
     $rootScope.markets = {
-        'btc': ['coinedup', 'cryptsy (unimplemented)'],
-        'ltc': ['freshmarket']
+        'btc': ['All']
     };
 
     $rootScope.market = 'btc';
-    $rootScope.exchange = 'coinedup';
+    $rootScope.exchange = 'All';  // default view
 
     if($routeParams.market && $routeParams.market in $rootScope.markets){
         $rootScope.market = $routeParams.market;
@@ -82,29 +77,18 @@ angular.module('nyan-chart', ['ngRoute'])
 
     // charting
     $scope.app = [];
-    var time_adj = 0;
 
-    socket.emit('switch-view', {
-                    market: $scope.market,
-                    exchange: $scope.exchange,
-                    interval: 'latest'
-               })
-
-    socket.on('render', function(data){
+//    socket.on('render', function(data){
         // initialize charts and table
-        $scope.app.data = data;
+        $scope.app.data = [ // temporary setup data
+          {date: Date.now()-10000, price: 375},
+          {date: Date.now()-100, price: 375}
+        ];
         $scope.app.coordinate = [];
         $scope.app.coordinate.real = [];
-        $scope.app.coordinate.high = [];
-        $scope.app.coordinate.low = [];
         $scope.app.chart = [$('#price-overtime')];
-        $scope.app.ymax = 0.001;    // LTC
+        $scope.app.ymax = 500;
 
-        if ($scope.market == 'btc')
-            $scope.app.ymax = 0.002;
-
-
-        // wrong order!
         $scope.app.data.sort(function (a, b) {
             if (a.time > b.time)
             return 1;
@@ -115,35 +99,22 @@ angular.module('nyan-chart', ['ngRoute'])
         });
 
         $scope.app.data.forEach(function(trade) {
-            $scope.app.coordinate.real.push([trade.time * 1000 - time_adj, trade.rate]);
+            $scope.app.coordinate.real.push([trade.date, trade.price]);
         });
 
-        if ($scope.app.data[0].high) {
-            $scope.app.data.forEach(function(trade) {
-                $scope.app.coordinate.high.push([trade.time * 1000 - time_adj, trade.high]);
-            });
-        }
-
-        if ($scope.app.data[0].low) {
-            $scope.app.data.forEach(function(trade) {
-                $scope.app.coordinate.low.push([trade.time * 1000 - time_adj, trade.low]);
-            });
-        }
-
         $scope.app.plot = $.plot($scope.app.chart[0], [
-            { data: $scope.app.coordinate.real, id: 'actual', lines: {fill: false} } ,
-            { data: $scope.app.coordinate.high, fillBetween: 'actual', color: "#0f0" },
-            { data: $scope.app.coordinate.low, fillBetween: 'actual', color: "#f00" }
+            { data: $scope.app.coordinate.real, id: 'actual', lines: {fill: false} }
         ], {
             lines: { show: true, fill: true },
             points: { show: true },
             series: { downsample: { threshold: 200 } },
-            xaxis: { mode: "time", timeformat: "%m/%d %H:%M", ticks: 5, minTickSize: [1/2, "hour"], timezone: "browser",
-                        min: $scope.app.coordinate.real[$scope.app.coordinate.real.length - 1][0] - 10000000,
-                        panRange: [$scope.app.coordinate.real[0][0] - 2000000, new Date().getTime() + 5000000] },
+            xaxis: { mode: "time", timeformat: "%m/%d %H:%M:%S", ticks: 5, minTickSize: [10, "second"], timezone: "browser",
+                        min: Date.now()-1000, zoomRange: [1000, 1000000],
+                        panRange: [Date.now()-1000, null]
+                   },
             yaxis: { min: $scope.app.ymax / 2, max: $scope.app.ymax, panRange: [-0.0002, $scope.app.ymax / 2 * 3],
-                        zoomRange: $scope.app.ymax },
-            zoom: { interactive: true, center: {right: 0} },
+                        zoomRange: [5, $scope.app.ymax / 2] },
+            zoom: { interactive: true, center: {left: 500} },
             pan: { interactive: true }
         });
 
@@ -163,57 +134,28 @@ angular.module('nyan-chart', ['ngRoute'])
                 + " &ndash; " + axes.yaxis.max.toFixed(8));
         });
 
-        // update ticker
-        $('#value').text($scope.app.data[$scope.app.data.length-1].rate);
+//    });
 
-        for (var i = $scope.app.data.length - 18; i < $scope.app.data.length; i++){
-            date = new Date($scope.app.data[i].time * 1000 - time_adj);
-            $('#table-header').after(
-                '<tr><td><abbr title="' + date.toString() + '">' + pad(date.getHours()) +
-                                    ':' + pad(date.getMinutes()) + '</abbr></td>' +
-                '<td>' + $scope.app.data[i].rate + '</td></tr>'
-            );
-        }
-    });
+    socket.on('trade', function (trade) {
+        $scope.app.data = $scope.app.data.concat(trade);
+        $scope.app.coordinate.real.push([trade.date, trade.price]);
 
-    socket.on('update', function (new_data) {
-        new_data = new_data.reverse();
-        $scope.app.data = $scope.app.data.concat(new_data);
-        new_data.forEach(function(trade) {
-            $scope.app.coordinate.real.push([trade.time * 1000 - time_adj, trade.rate]);
-
-            date = new Date(trade.time * 1000 - time_adj);
-            $('#table-header').after(
-                '<tr><td><abbr title="' + date.toString() + '">' + pad(date.getHours()) +
-                                    ':' + pad(date.getMinutes()) + '</abbr></td>' +
-                '<td>' + trade.rate + '</td></tr>'
-            );
-
-        });
-
-        if (new_data[0].high) {
-            new_data.forEach(function(trade) {
-                $scope.app.coordinate.high.push([trade.time * 1000 - time_adj, trade.high]);
-            });
-        }
-
-        if (new_data[0].low) {
-            new_data.forEach(function(trade) {
-                $scope.app.coordinate.low.push([trade.time * 1000 - time_adj, trade.low]);
-            });
-        }
+        date = new Date(trade.date);
+        $('#table-header').after(
+          '<tr><td><abbr title="' + date.toString() + '">' + pad(date.getHours()) +
+          ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds()) + '</abbr></td>' +
+          '<td>' + trade.price + '</td>' + '<td>' + trade.amount + '</td>' + '</tr>'
+        );
 
         $scope.app.plot.setData([
-            { data: $scope.app.coordinate.real, id: 'actual', lines: {fill: false} } ,
-            { data: $scope.app.coordinate.high, fillBetween: 'actual', color: "#0f0" },
-            { data: $scope.app.coordinate.low, fillBetween: 'actual', color: "#f00" }
+            { data: $scope.app.coordinate.real, id: 'actual', lines: {fill: false} }
         ]);
 
         // Since the axes don't change, we don't need to call $scope.app.plot.setupGrid()
         $scope.app.plot.draw();
 
         // update ticker
-        $('#value').text($scope.app.data[$scope.app.data.length-1].rate);
+        $('.value').text($scope.app.data[$scope.app.data.length-1].price);
     });
 
 }])
