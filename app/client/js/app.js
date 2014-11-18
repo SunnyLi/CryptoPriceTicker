@@ -1,7 +1,5 @@
 angular.module('crypto-chart', ['ngRoute'])
 
-.value('socketUrl', 'http://api.marketmonitor.io:80/BTC/USD/trades')
-
 .factory('Socket', ['$rootScope', function ($rootScope) {
   var Socket = function (socketUrl) {
     var self = this;
@@ -9,6 +7,15 @@ angular.module('crypto-chart', ['ngRoute'])
 
     this.on = function (eventName, callback) {
       self.socket.on(eventName, function () {
+        var args = arguments;
+        $rootScope.$apply(function () {
+          callback.apply(self.socket, args);
+        });
+      });
+    };
+
+    this.once = function (eventName, callback) {
+      self.socket.once(eventName, function () {
         var args = arguments;
         $rootScope.$apply(function () {
           callback.apply(self.socket, args);
@@ -36,22 +43,25 @@ angular.module('crypto-chart', ['ngRoute'])
 }])
 
 .factory('sockets', ['Socket', function(Socket) {
-  // moar sockets!!
-  var trades = new Socket('http://api.marketmonitor.io:80/BTC/USD/trades'),
-      summary = new Socket('http://api.marketmonitor.io:80/BTC/USD/summary'),
-      volume = new Socket('http://api.marketmonitor.io:80/BTC/USD/volume'),
-      priceDistribution = new Socket('http://api.marketmonitor.io:80/BTC/USD/priceDistribution');
+  var marketmonitor_socket = 'http://api.marketmonitor.io:80',
+      trades = new Socket(marketmonitor_socket + '/BTC/USD/trades'),
+      summary = new Socket(marketmonitor_socket + '/BTC/USD/summary'),
+      volume = new Socket(marketmonitor_socket + '/BTC/USD/volume'),
+      priceDistribution = new Socket(marketmonitor_socket + '/BTC/USD/priceDistribution'),
+      minuteInterval = new Socket(marketmonitor_socket + '/BTC/USD/priceCharts/oneMinute');
 
   return {
     trades: trades,
     summary: summary,
     volume: volume,
     priceDistribution: priceDistribution,
+    minuteInterval: minuteInterval,
     removeListeners: function () {
       trades.getSocket().removeAllListeners();
       summary.getSocket().removeAllListeners();
       volume.getSocket().removeAllListeners();
       priceDistribution.getSocket().removeAllListeners();
+      minuteInterval.getSocket().removeAllListeners();
     }
   };
 }])
@@ -111,14 +121,21 @@ angular.module('crypto-chart', ['ngRoute'])
     // charting
     $scope.app = [];
 
-//    socket.on('render', function(data){
+    sockets.minuteInterval.once('update', function (data) {
         // initialize charts and table
-        $scope.app.data = [ // temporary setup data
-          {date: Date.now()-10000, price: 375},
-          {date: Date.now()-100, price: 375}
-        ];
+        $scope.app.data = data.map(function (obj) {
+          return {
+            date: Date.parse(obj.date),
+            price: obj.close,
+            high: obj.high,
+            low: obj.low,
+            amount: obj.volume
+          }
+        });
         $scope.app.coordinate = [];
-        $scope.app.coordinate.real = [];
+        $scope.app.coordinate.price = [];
+        $scope.app.coordinate.high = [];
+        $scope.app.coordinate.low = [];
         $scope.app.chart = [$('#price-overtime')];
         $scope.app.ymax = 500;
 
@@ -132,19 +149,21 @@ angular.module('crypto-chart', ['ngRoute'])
         });
 
         $scope.app.data.forEach(function(trade) {
-            $scope.app.coordinate.real.push([trade.date, trade.price]);
+            $scope.app.coordinate.price.push([trade.date, trade.price]);
+            $scope.app.coordinate.high.push([trade.date, trade.high]);
+            $scope.app.coordinate.low.push([trade.date, trade.low]);
         });
 
         $scope.app.plot = $.plot($scope.app.chart[0], [
-            { data: $scope.app.coordinate.real, id: 'actual', lines: {fill: false} }
+            { data: $scope.app.coordinate.price, id: 'actual', lines: {fill: false} },
+            { data: $scope.app.coordinate.high, fillBetween: 'actual', color: "#0f0" },
+            { data: $scope.app.coordinate.low, fillBetween: 'actual', color: "#f00" }
         ], {
             lines: { show: true, fill: true },
             points: { show: true },
             series: { downsample: { threshold: 200 } },
-            xaxis: { mode: "time", timeformat: "%m/%d %H:%M:%S", ticks: 5, minTickSize: [10, "second"], timezone: "browser",
-                        min: Date.now()-1000, zoomRange: [1000, 1000000],
-                        panRange: [Date.now()-1000, null]
-                   },
+            xaxis: { mode: "time", timeformat: "%m/%d %H:%M:%S", ticks: 5, minTickSize: [10, "second"],
+                    timezone: "browser", min: Date.now()-1000000, zoomRange: [10000, 1000000] },
             yaxis: { min: $scope.app.ymax / 2, max: $scope.app.ymax, panRange: [-0.0002, $scope.app.ymax / 2 * 3],
                         zoomRange: [5, $scope.app.ymax / 2] },
             zoom: { interactive: true, center: {left: 500} },
@@ -167,11 +186,11 @@ angular.module('crypto-chart', ['ngRoute'])
                 + " &ndash; " + axes.yaxis.max.toFixed(8));
         });
 
-//    });
+    });
 
     sockets.trades.on('trade', function (trade) {
         $scope.app.data = $scope.app.data.concat(trade);
-        $scope.app.coordinate.real.push([trade.date, trade.price]);
+        $scope.app.coordinate.price.push([trade.date, trade.price]);
 
         date = new Date(trade.date);
         $('#table-header').after(
@@ -181,7 +200,9 @@ angular.module('crypto-chart', ['ngRoute'])
         );
 
         $scope.app.plot.setData([
-            { data: $scope.app.coordinate.real, id: 'actual', lines: {fill: false} }
+            { data: $scope.app.coordinate.price, id: 'actual', lines: {fill: false} },
+            { data: $scope.app.coordinate.high, fillBetween: 'actual', color: "#0f0" },
+            { data: $scope.app.coordinate.low, fillBetween: 'actual', color: "#f00" }
         ]);
 
         // Since the axes don't change, we don't need to call $scope.app.plot.setupGrid()
