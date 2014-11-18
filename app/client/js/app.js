@@ -2,29 +2,56 @@ angular.module('crypto-chart', ['ngRoute'])
 
 .value('socketUrl', 'http://api.marketmonitor.io:80/BTC/USD/trades')
 
-.factory('socket', ['$rootScope', 'socketUrl', function ($rootScope, socketUrl) {
-  var socket = io.connect(socketUrl);
-  return {
-    on: function (eventName, callback) {
-      socket.on(eventName, function () {
+.factory('Socket', ['$rootScope', function ($rootScope) {
+  var Socket = function (socketUrl) {
+    var self = this;
+    self.socket = io.connect(socketUrl);
+
+    this.on = function (eventName, callback) {
+      self.socket.on(eventName, function () {
         var args = arguments;
         $rootScope.$apply(function () {
-          callback.apply(socket, args);
+          callback.apply(self.socket, args);
         });
       });
-    },
-    emit: function (eventName, data, callback) {
-      socket.emit(eventName, data, function () {
+    };
+
+    this.emit = function (eventName, data, callback) {
+      self.socket.emit(eventName, data, function () {
         var args = arguments;
         $rootScope.$apply(function () {
           if (callback) {
-            callback.apply(socket, args);
+            callback.apply(self.socket, args);
           }
         });
-      })
-    },
-    getSocket: function () {
-      return socket;
+      });
+    };
+
+    this.getSocket = function () {
+      return self.socket;
+    };
+  };
+
+  return Socket;
+}])
+
+.factory('sockets', ['Socket', function(Socket) {
+  // moar sockets!!
+  var trades = new Socket('http://api.marketmonitor.io:80/BTC/USD/trades'),
+      summary = new Socket('http://api.marketmonitor.io:80/BTC/USD/summary'),
+      volume = new Socket('http://api.marketmonitor.io:80/BTC/USD/volume'),
+      priceDistribution = new Socket('http://api.marketmonitor.io:80/BTC/USD/priceDistribution');
+
+  return {
+    trades: trades,
+    summary: summary,
+    volume: volume,
+    priceDistribution: priceDistribution,
+    removeListeners: function () {
+      trades.getSocket().removeAllListeners();
+      summary.getSocket().removeAllListeners();
+      volume.getSocket().removeAllListeners();
+      priceDistribution.getSocket().removeAllListeners();
     }
   };
 }])
@@ -44,14 +71,20 @@ angular.module('crypto-chart', ['ngRoute'])
         });
 }])
 
-.controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'socket', function($scope, $routeParams, $rootScope, socket) {
+.controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'sockets', function($scope, $routeParams, $rootScope, sockets) {
 
     $rootScope.markets = {
-        'btc': ['All']
+        'btc': ['All Markets'],
+        'doge': []
     };
 
     $rootScope.market = 'btc';
     $rootScope.exchange = 'All';  // default view
+  
+    sockets.summary.on('update', function (data) {
+      $rootScope.price_high = data.high;
+      $rootScope.price_low = data.low;
+    });
 
     if($routeParams.market && $routeParams.market in $rootScope.markets){
         $rootScope.market = $routeParams.market;
@@ -69,7 +102,7 @@ angular.module('crypto-chart', ['ngRoute'])
 
     // remove old listeners
     $scope.$on('$destroy', function (event) {
-        socket.getSocket().removeAllListeners();
+        sockets.removeListeners();
     })
 
     // helpful..
@@ -136,7 +169,7 @@ angular.module('crypto-chart', ['ngRoute'])
 
 //    });
 
-    socket.on('trade', function (trade) {
+    sockets.trades.on('trade', function (trade) {
         $scope.app.data = $scope.app.data.concat(trade);
         $scope.app.coordinate.real.push([trade.date, trade.price]);
 
@@ -156,6 +189,14 @@ angular.module('crypto-chart', ['ngRoute'])
 
         // update ticker
         $('.value').text($scope.app.data[$scope.app.data.length-1].price);
+    });
+
+    sockets.volume.on('update', function (data) {
+      console.log('volume: ', data);
+    });
+
+    sockets.priceDistribution.on('update', function (data) {
+      console.log('price distribution: ', data);
     });
 
 }])

@@ -4,12 +4,12 @@
             <div id="current">
               $<span class="value">?</span> USD / {{market | uppercase}}
             </div><br>
-            <!--<div id="bid">much <span style="color: #0f0">bid</span>:
-                <span id="current-bid">233</span>
+            <div id="bid"><span style="color: #0f0">high</span>:
+                <span id="current-bid">{{price_high | currency}}</span>
             </div>
-            <div id="ask">very <span style="color: #f00">ask</span>:
-                <span id="current-ask">238</span>
-            </div>-->
+            <div id="ask"><span style="color: #f00">low</span>:
+                <span id="current-ask">{{price_low | currency}}</span>
+            </div>
         </div>
         <div id="table-div">
             <table id="trades">

@@ -70,6 +70,7 @@ body {
 #ticker {
     text-align:center;
     margin: auto 15px;
+    min-height: 5em;
     line-height: 100%;
 }
 

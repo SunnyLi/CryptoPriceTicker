@@ -1,4 +1,4 @@
-Crypto Price Chart
+Crypto Price Ticker
 ====================
 
-Chart for cryptocurrency prices across different exchanges.
+Price ticker and charts for cryptocurrency prices across different exchanges.
