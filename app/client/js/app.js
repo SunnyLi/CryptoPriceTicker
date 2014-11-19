@@ -43,6 +43,7 @@ angular.module('crypto-chart', ['ngRoute'])
 }])
 
 .factory('sockets', ['Socket', function(Socket) {
+  // more like BTC/USD sockets
   var marketmonitor_socket = 'http://api.marketmonitor.io:80',
       trades = new Socket(marketmonitor_socket + '/BTC/USD/trades'),
       summary = new Socket(marketmonitor_socket + '/BTC/USD/summary'),
@@ -53,13 +54,11 @@ angular.module('crypto-chart', ['ngRoute'])
   return {
     trades: trades,
     summary: summary,
-    volume: volume,
     priceDistribution: priceDistribution,
     minuteInterval: minuteInterval,
     removeListeners: function () {
       trades.getSocket().removeAllListeners();
       summary.getSocket().removeAllListeners();
-      volume.getSocket().removeAllListeners();
       priceDistribution.getSocket().removeAllListeners();
       minuteInterval.getSocket().removeAllListeners();
     }
@@ -81,7 +80,8 @@ angular.module('crypto-chart', ['ngRoute'])
         });
 }])
 
-.controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'sockets', function($scope, $routeParams, $rootScope, sockets) {
+.controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'sockets',
+                       function($scope, $routeParams, $rootScope, sockets) {
 
     $rootScope.markets = {
         'btc': ['All Markets'],
@@ -115,11 +115,14 @@ angular.module('crypto-chart', ['ngRoute'])
         sockets.removeListeners();
     })
 
-    // helpful..
-    console.log($rootScope.market + ' ' + $rootScope.exchange + ' ...');
-
-    // charting
-    $scope.app = [];
+    // chart app data
+    $scope.app = {
+      coordinate: {
+        price: [],
+        high: [],
+        low: []
+      }
+    };
 
     sockets.minuteInterval.once('update', function (data) {
         // initialize charts and table
@@ -132,20 +135,12 @@ angular.module('crypto-chart', ['ngRoute'])
             amount: obj.volume
           }
         });
-        $scope.app.coordinate = [];
-        $scope.app.coordinate.price = [];
-        $scope.app.coordinate.high = [];
-        $scope.app.coordinate.low = [];
+
         $scope.app.chart = [$('#price-overtime')];
         $scope.app.ymax = 500;
 
         $scope.app.data.sort(function (a, b) {
-            if (a.time > b.time)
-            return 1;
-            if (a.time < b.time)
-            return -1;
-            // a must be equal to b
-            return 0;
+            return a.date - b.date;
         });
 
         $scope.app.data.forEach(function(trade) {
@@ -192,6 +187,11 @@ angular.module('crypto-chart', ['ngRoute'])
         $scope.app.data = $scope.app.data.concat(trade);
         $scope.app.coordinate.price.push([trade.date, trade.price]);
 
+        // inefficient
+        $scope.app.coordinate.price.sort(function (a, b) {
+            return a[0] - b[0];
+        });
+
         date = new Date(trade.date);
         $('#table-header').after(
           '<tr><td><abbr title="' + date.toString() + '">' + pad(date.getHours()) +
@@ -210,10 +210,6 @@ angular.module('crypto-chart', ['ngRoute'])
 
         // update ticker
         $('.value').text($scope.app.data[$scope.app.data.length-1].price);
-    });
-
-    sockets.volume.on('update', function (data) {
-      console.log('volume: ', data);
     });
 
     sockets.priceDistribution.on('update', function (data) {
