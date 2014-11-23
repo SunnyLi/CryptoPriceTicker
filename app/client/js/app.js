@@ -185,12 +185,19 @@ angular.module('crypto-chart', ['ngRoute'])
 
     sockets.trades.on('trade', function (trade) {
         $scope.app.data = $scope.app.data.concat(trade);
-        $scope.app.coordinate.price.push([trade.date, trade.price]);
+        price_arr = $scope.app.coordinate.price;
 
-        // inefficient
-        $scope.app.coordinate.price.sort(function (a, b) {
+        // insert new data point and sort it to the correct time position
+        // only sort the last few `sort_threshold` elements to optimize.
+        sort_threshold = 20;
+        if (price_arr.length > sort_threshold) {
+          latests = price_arr.splice(price_arr.length - sort_threshold, sort_threshold);
+          latests.push([trade.date, trade.price]);
+          latests.sort(function (a, b) {
             return a[0] - b[0];
-        });
+          });
+          $scope.app.coordinate.price = price_arr.concat(latests);
+        }
 
         date = new Date(trade.date);
         $('#table-header').after(
