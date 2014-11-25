@@ -205,13 +205,6 @@ angular.module('crypto-chart', ['ngRoute'])
           $scope.app.coordinate.price = price_arr.concat(latests);
         }
 
-        date = new Date(trade.date);
-        $('#table-header').after(
-          '<tr><td><abbr title="' + date.toString() + '">' + pad(date.getHours()) +
-          ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds()) + '</abbr></td>' +
-          '<td>' + trade.price + '</td>' + '<td>' + trade.amount + '</td>' + '</tr>'
-        );
-
         $scope.app.plot.setData([
             { data: $scope.app.coordinate.price, id: 'actual', lines: {fill: false} },
             { data: $scope.app.coordinate.high, fillBetween: 'actual', color: "#0f0" },

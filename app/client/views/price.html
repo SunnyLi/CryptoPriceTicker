@@ -19,6 +19,19 @@
                         <th>Rate</th>
                         <th>Amount</th>
                     </tr>
+                    <tr ng-repeat="tx in app.data | orderBy:'date':true">
+                      <td>
+                        <abbr title="{{ tx.date | date }}">
+                          {{ tx.date | date:"HH:mm:ss" }}
+                        </abbr>
+                      </td>
+                      <td>
+                        {{ tx.price | currency }}
+                      </td>
+                      <td>
+                        {{ tx.amount | number:3 }}
+                      </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -28,7 +41,7 @@
     <h3 style="color: #999;">$<span class="value">???</span> USD / {{market | uppercase}} on {{exchange}}</h3>
 
     <div class="graph-container">
-        <div id="price-overtime" class="chart"></div>
+      <div id="price-overtime" class="chart"></div>
     </div>
 
     <p class="message" style="color: #333">You can zoom and drag on the chart to explore data</p>
