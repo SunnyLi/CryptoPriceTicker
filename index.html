@@ -20,7 +20,7 @@
     <script language="javascript" type="text/javascript" src="//cdn.socket.io/socket.io-1.2.0.js"></script>
     <script language="javascript" type="text/javascript" src="app/client/js/app.js"></script>
 </head>
-<body>
+<body ng-controller="MainCtrl">
     <div id="header">
         <div id="header-wrap">
             <span id="title-box">
@@ -29,10 +29,14 @@
             </span>
             <span id="selections">
                 <div id="currency">
-                    <span ng-repeat="(coin, exchanges) in markets" id="{{coin}}">{{coin | uppercase}}</span>
+                  <span ng-repeat="(coin, exchanges) in markets" id="{{coin}}">
+                    {{coin | uppercase}}
+                  </span>
                 </div>
                 <div ng-repeat="(coin, exchanges) in markets" class="exchange" id="{{coin}}">
-                    <a href="#/{{coin}}/{{exchange}}" ng-repeat="exchange in exchanges" id="{{exchange}}">{{exchange}}</a>
+                  <a href="#/{{coin}}/{{exchange}}" ng-repeat="exchange in exchanges" id="{{exchange}}">
+                    {{exchange}}
+                  </a>
                 </div>
             </span>
         </div>

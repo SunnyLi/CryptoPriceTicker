@@ -80,35 +80,41 @@ angular.module('crypto-chart', ['ngRoute'])
         });
 }])
 
+.controller('MainCtrl', ['$scope', '$routeParams', function($scope, $routeParams) {
+
+  $scope.markets = {
+      'btc': ['All'],
+      'doge': []
+  };
+
+  // default view
+  $scope.market = 'btc';
+  $scope.exchange = 'All';
+
+  $scope.$on('$routeChangeSuccess', function() {
+    if($routeParams.market && $routeParams.market in $scope.markets) {
+      $scope.market = $routeParams.market;
+
+      if ($routeParams.exchange) {
+        if($.inArray($routeParams.exchange, $scope.markets[$scope.market]) > -1){
+          $scope.exchange = $routeParams.exchange;
+          console.log($routeParams.exchange);
+        } else {
+          $scope.exchange = $scope.markets[$scope.market][0];
+        }
+      }
+    }
+  });
+
+}])
+
 .controller('Ticker', ['$scope', '$routeParams', '$rootScope', 'sockets',
                        function($scope, $routeParams, $rootScope, sockets) {
-
-    $rootScope.markets = {
-        'btc': ['All Markets'],
-        'doge': []
-    };
-
-    $rootScope.market = 'btc';
-    $rootScope.exchange = 'All';  // default view
   
     sockets.summary.on('update', function (data) {
       $rootScope.price_high = data.high;
       $rootScope.price_low = data.low;
     });
-
-    if($routeParams.market && $routeParams.market in $rootScope.markets){
-        $rootScope.market = $routeParams.market;
-
-        if ($routeParams.exchange)
-            if($.inArray($routeParams.exchange, $rootScope.markets[$rootScope.market]) > -1){
-                $rootScope.exchange = $routeParams.exchange;
-            } else {
-                $rootScope.exchange = $rootScope.markets[$rootScope.market][0];
-            }
-    }
-
-    // lazy top-bar reset
-    $('span#selections').trigger('mouseleave');
 
     // remove old listeners
     $scope.$on('$destroy', function (event) {
@@ -229,8 +235,8 @@ angular.module('crypto-chart', ['ngRoute'])
 function pad(n) { return n < 10 ? '0' + n : n }
 
 // top menu watcher
-$(document).ready(function(){
-    rootscope = angular.element('html').scope();
+$(document).ready(function() {
+    rootScope = angular.element('body').scope();
 
     setTimeout(function() {
         // setup menu highlight
@@ -241,9 +247,9 @@ $(document).ready(function(){
             // reset
             menuReset();
             // remove default
-            $('#currency #'+rootscope.market).removeAttr('style');
-            $('.exchange#'+rootscope.market).removeAttr('style');
-            $('#'+rootscope.market+' #'+rootscope.exchange).removeAttr('style');
+            $('#currency #'+rootScope.market).removeAttr('style');
+            $('.exchange#'+rootScope.market).removeAttr('style');
+            $('#'+rootScope.market+' #'+rootScope.exchange).removeAttr('style');
             // set temp
             hoverThis = this;
             $(this).css("color", "#a0a0a0");
@@ -259,9 +265,9 @@ $(document).ready(function(){
             $('.exchange').removeAttr('style');
             $('.exchange a').removeAttr('style');
             // set default
-            $('#currency #'+rootscope.market).css("color", "white");
-            $('.exchange#'+rootscope.market).css('display', 'block');
-            $('#'+rootscope.market+' #'+rootscope.exchange).css("color", "white");   
+            $('#currency #'+rootScope.market).css("color", "white");
+            $('.exchange#'+rootScope.market).css('display', 'block');
+            $('#'+rootScope.market+' #'+rootScope.exchange).css("color", "white");   
         }
     }, 1000);
 });
