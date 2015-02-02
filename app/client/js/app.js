@@ -143,7 +143,7 @@ angular.module('crypto-chart', ['ngRoute'])
         });
 
         $scope.app.chart = [$('#price-overtime')];
-        $scope.app.ymax = 500;
+        $scope.app.ymax = 350;
 
         $scope.app.data.sort(function (a, b) {
             return a.date - b.date;
